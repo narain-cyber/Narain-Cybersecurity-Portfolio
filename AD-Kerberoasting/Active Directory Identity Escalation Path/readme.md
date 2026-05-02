@@ -1,6 +1,6 @@
 # Lab Report: Active Directory Identity Escalation Path
 
-**Author:** Dylan Matthew Narain
+**Author:** Dylan Narain
 **Date:** May 2, 2026
 **Environment:** `narain.lab` (Isolated Research Environment)
 
