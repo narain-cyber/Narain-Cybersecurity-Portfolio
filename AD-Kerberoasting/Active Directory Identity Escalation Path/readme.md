@@ -1,8 +1,11 @@
 # Lab Report: Active Directory Identity Escalation Path
 
 **Author:** Dylan Matthew Narain
+
 **Date:** May 2, 2026
+
 **Focus:** Identity Security, Privilege Escalation, and Kerberoasting
+
 **Environment:** `narain.lab` (Isolated Lab Environment)
 
 ---
