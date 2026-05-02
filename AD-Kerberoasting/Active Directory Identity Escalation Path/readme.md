@@ -17,22 +17,22 @@ Internal mapping was performed using **SharpHound** to identify permission-based
 `.\SharpHound.exe -c All --domain narain.lab`
 
 ![SharpHound Execution](screenshots/Sharphound_Running_Win_Server_2022.png)
-![SharpHound Artifacts](screenshots/SharpHound_File_Location.jpg)
+![SharpHound Artifacts](screenshots/SharpHound_File_Location.png)
 
 ## 3. Phase II: Attack Path Analysis
 The data was ingested into **BloodHound** to visualize the shortest path to Domain Admin.
 
-![BloodHound Setup](screenshots/Neo4j_startup_kali.jpg)
+![BloodHound Setup](screenshots/Neo4j_startup_kali.png)
 ![Data Ingestion](screenshots/bloodhound_zip_upload.png)
 ![Visualized Path](screenshots/d.student-DA.png)
 
 ## 4. Phase III: Kerberoasting & Cracking
 Since the service account had an SPN, it was targeted to retrieve an NTLM hash via Kerberoasting.
 
-![Kerberoasting Results](screenshots/golden_ticket_d.student.jpg)
-![Hashcat Crack](screenshots/hashcat-crack.jpg)
+![Kerberoasting Results](screenshots/golden_ticket_d.student.png)
+![Hashcat Crack](screenshots/hashcat-crack.png)
 
 ## 5. Phase IV: Final Validation
 Authentication was verified using `netexec` to confirm administrative control over the Domain Controller.
 
-![Credential Validation](screenshots/netexec_svc_acc.jpg)
+![Credential Validation](screenshots/netexec_svc_acc.png)
