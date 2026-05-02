@@ -2,7 +2,8 @@
 
 **Author:** Dylan Narain
 **Date:** May 2, 2026
-**Environment:** `narain.lab` (Isolated Research Environment)
+**Focus:** Identity Security, Privilege Escalation, and Kerberoasting
+**Environment:** `narain.lab` (Isolated Lab Environment)
 
 ---
 
@@ -10,65 +11,49 @@
 This report documents a successful identity-based attack path originating from a low-privileged user account. By exploiting insecure Active Directory permissions and leveraging a Kerberoasting attack, I achieved a total forest compromise. This lab highlights the critical risk of "Shadow Admins"—accounts that possess administrative rights over high-tier objects without being members of protected groups.
 
 ## 2. Lab Scenario & Background
-The objective of this lab was to simulate a "Common Entry" breach. 
-*   **Initial Access**: A low-privileged account (`d.student`) was compromised via simulated phishing.
-*   **Environment**: A Windows Server 2022 Domain Controller managing a research-focused forest.
-*   **Goal**: Escalate privileges to the `Domain Admins` group.
+The objective was to simulate a common entry-point breach.
+*   **Initial Access**: A low-privileged student-tier account (`d.student`) was compromised.
+*   **Target**: Escalate privileges to the `Domain Admins` group.
+*   **Significance**: In a higher education environment, a single compromised workstation can become a beachhead for lateral movement if permissions are not strictly tiered.
 
 ## 3. Phase I: Reconnaissance & Enumeration
-The engagement began with mapping the internal Active Directory environment to identify misconfigurations and trust relationships.
+Internal mapping was performed using **SharpHound** to identify misconfigurations and permission-based attack vectors.
 
-### Steps:
-1.  Transferred the **SharpHound** collector to the target workstation.
-2.  Executed the collector to gather all domain data.
-    ```powershell
-    .\SharpHound.exe -c All --domain narain.lab
-    ```
+**Execution:**
+`.\SharpHound.exe -c All --domain narain.lab`
 
-![SharpHound Execution](Narain-Cybersecurity-Portfolio/AD-Kerberoasting/Active%20Directory%20Identity%20Escalation%20Path/screenshots/Sharphound_Running_Win_Server_2022.png)
-![SharpHound Artifacts](Narain-Cybersecurity-Portfolio/AD-Kerberoasting/Active%20Directory%20Identity%20Escalation%20Path/screenshots/SharpHound_File_Location.jpg)
+![SharpHound Execution](AD-Kerberoasting/Active%20Directory%20Identity%20Escalation%20Path/screenshots/Sharphound_Running_Win_Server_2022.png)
+![SharpHound Artifacts](AD-Kerberoasting/Active%20Directory%20Identity%20Escalation%20Path/screenshots/SharpHound_File_Location.jpg)
 
 ## 4. Phase II: Attack Path Analysis
-The collected data was ingested into **BloodHound** to visualize the attack surface.
-
-### Steps:
-1.  Started the **Neo4j** database and BloodHound interface.
-2.  Uploaded the SharpHound zip file.
-3.  Mapped the path from `d.student` to the `Domain Admins` group.
+The data was ingested into **BloodHound** to visualize the shortest path to Domain Admin.
 
 **Findings:**
-The analysis revealed that `d.student` had **GenericAll** rights over `svc_sql_research`, which in turn had **GenericAll** rights over the `Administrator` account.
+Analysis revealed that `d.student` had **GenericAll** rights over `svc_sql_research`, which in turn held **GenericAll** rights over the `Administrator` account.
 
-![BloodHound Setup](Narain-Cybersecurity-Portfolio/AD-Kerberoasting/Active%20Directory%20Identity%20Escalation%20Path/screenshots/Neo4j_startup_kali.jpg)
-![Data Upload](Narain-Cybersecurity-Portfolio/AD-Kerberoasting/Active%20Directory%20Identity%20Escalation%20Path/screenshots/bloodhound_zip_upload.png)
-![Visualized Path](Narain-Cybersecurity-Portfolio/AD-Kerberoasting/Active%20Directory%20Identity%20Escalation%20Path/screenshots/d.student-DA.png)
+![BloodHound Setup](AD-Kerberoasting/Active%20Directory%20Identity%20Escalation%20Path/screenshots/Neo4j_startup_kali.jpg)
+![Data Ingestion](AD-Kerberoasting/Active%20Directory%20Identity%20Escalation%20Path/screenshots/bloodhound_zip_upload.png)
+![Visualized Path](AD-Kerberoasting/Active%20Directory%20Identity%20Escalation%20Path/screenshots/d.student-DA.png)
 
-## 5. Phase III: Kerberoasting (Credential Harvesting)
-Since `svc_sql_research` was a service account with an SPN, it was targeted to retrieve a crackable hash.
+## 5. Phase III: Kerberoasting & Cracking
+Since `svc_sql_research` was a service account with a Service Principal Name (SPN), it was targeted to retrieve an NTLM hash via Kerberoasting.
 
-### Steps:
-1.  Used `impacket-GetUserSPNs` to identify and request a TGS-REP for the service account.
-2.  The resulting hash was saved for offline cracking.
+**Execution:**
+1. Requested a TGS-REP using `impacket-GetUserSPNs`.
+2. Utilized **Hashcat** with module `13100` (Kerberos 5, etype 23) for offline cracking.
+3. **Result**: Password cracked: `Test123Test`.
 
-![Kerberoasting](Narain-Cybersecurity-Portfolio/AD-Kerberoasting/Active%20Directory%20Identity%20Escalation%20Path/screenshots/golden_ticket_d.student.jpg)
+![Kerberoasting Results](AD-Kerberoasting/Active%20Directory%20Identity%20Escalation%20Path/screenshots/golden_ticket_d.student.jpg)
+![Hashcat Crack](AD-Kerberoasting/Active%20Directory%20Identity%20Escalation%20Path/screenshots/hashcat-crack.jpg)
 
-## 6. Phase IV: Offline Password Cracking & Validation
-The final stage involved recovering the plaintext password to execute the privilege escalation.
+## 6. Phase IV: Final Validation
+Authentication was verified using `netexec` to confirm administrative control over the Domain Controller (192.168.56.10).
 
-### Steps:
-1.  Utilized **Hashcat** with the Kerberos 5 etype 23 module.
-    ```bash
-    hashcat -m 13100 svc_hash.txt password_list.txt
-    ```
-2.  The password was cracked: **`Test123Test`**.
-3.  Validated the credentials using `netexec` to confirm administrative access.
-
-![Hashcat Crack](Narain-Cybersecurity-Portfolio/AD-Kerberoasting/Active%20Directory%20Identity%20Escalation%20Path/screenshots/hashcat-crack.jpg)
-![Credential Validation](Narain-Cybersecurity-Portfolio/AD-Kerberoasting/Active%20Directory%20Identity%20Escalation%20Path/screenshots/netexec_svc_acc.jpg)
+![Credential Validation](AD-Kerberoasting/Active%20Directory%20Identity%20Escalation%20Path/screenshots/netexec_svc_acc.jpg)
 
 ---
 
-## 7. Remediation Recommendations
-*   **Implement Tiered Administration**: Ensure service accounts cannot manage Tier-0 objects (Domain Admins).
-*   **Enforce Managed Service Accounts (gMSA)**: These accounts use complex, automatically rotated passwords that are resistant to Kerberoasting.
-*   **Audit Active Directory Permissions**: Regularly run BloodHound to identify and revoke unintended **GenericAll** or **WriteDacl** permissions.
+## 7. Strategic Remediation
+*   **Tiered Administration**: Isolate Tier-0 (Domain Admin) credentials so they cannot be managed by Tier-1 or Tier-2 accounts.
+*   **Least Privilege**: Audit and revoke excessive **GenericAll** permissions on service accounts.
+*   **Detection**: Implement SIEM alerts for **Event ID 4769** with RC4 encryption (0x17) to identify Kerberoasting attempts.
